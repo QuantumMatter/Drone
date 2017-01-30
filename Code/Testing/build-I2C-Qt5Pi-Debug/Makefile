@@ -14,11 +14,11 @@ CC            = /home/davidkopala/bakeqtpi_opt_ln/gcc-4.7-linaro-rpi-gnueabihf/b
 CXX           = /home/davidkopala/bakeqtpi_opt_ln/gcc-4.7-linaro-rpi-gnueabihf/bin/arm-linux-gnueabihf-g++
 DEFINES       = -DQT_DEPRECATED_WARNINGS -DQT_QML_DEBUG -DQT_CORE_LIB
 CFLAGS        = -pipe -marm -mfpu=vfp -mtune=arm1176jzf-s -march=armv6zk -mabi=aapcs-linux -mfloat-abi=hard --sysroot=/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs -g -Wall -W -D_REENTRANT -fPIE $(DEFINES)
-CXXFLAGS      = -pipe -marm -mfpu=vfp -mtune=arm1176jzf-s -march=armv6zk -mabi=aapcs-linux -mfloat-abi=hard --sysroot=/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs -lwiringPi -g -std=c++0x -Wall -W -D_REENTRANT -fPIE $(DEFINES)
-INCPATH       = -I/usr/local/qt5pi/mkspecs/devices/linux-rasp-pi-g++ -I../I2C -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore -I. -I.
+CXXFLAGS      = -pipe -marm -mfpu=vfp -mtune=arm1176jzf-s -march=armv6zk -mabi=aapcs-linux -mfloat-abi=hard --sysroot=/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs -g -std=c++0x -Wall -W -D_REENTRANT -fPIE $(DEFINES)
+INCPATH       = -I/usr/local/qt5pi/mkspecs/devices/linux-rasp-pi-g++ -I../I2C -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/include -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore -I. -I.
 LINK          = /home/davidkopala/bakeqtpi_opt_ln/gcc-4.7-linaro-rpi-gnueabihf/bin/arm-linux-gnueabihf-g++
 LFLAGS        = -Wl,-rpath-link,/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/opt/vc/lib -Wl,-rpath-link,/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/lib/arm-linux-gnueabihf -Wl,-rpath-link,/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/lib/arm-linux-gnueabihf --sysroot=/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs -Wl,-rpath,/usr/local/qt5pi/lib
-LIBS          = $(SUBLIBS) -L/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/qt5pi/lib -lQt5Core -lpthread 
+LIBS          = $(SUBLIBS) -L/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/lib -lwiringPi -L/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/qt5pi/lib -lQt5Core -lpthread 
 AR            = /home/davidkopala/bakeqtpi_opt_ln/gcc-4.7-linaro-rpi-gnueabihf/bin/arm-linux-gnueabihf-ar cqs
 RANLIB        = 
 QMAKE         = /usr/local/qt5pi/bin/qmake
@@ -45,8 +45,19 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = ../I2C/main.cpp 
-OBJECTS       = main.o
+SOURCES       = ../I2C/main.cpp \
+		../I2C/mpu6050.cpp \
+		../I2C/pca9685.cpp \
+		../I2C/esc.cpp moc_mpu6050.cpp \
+		moc_pca9685.cpp \
+		moc_esc.cpp
+OBJECTS       = main.o \
+		mpu6050.o \
+		pca9685.o \
+		esc.o \
+		moc_mpu6050.o \
+		moc_pca9685.o \
+		moc_esc.o
 DIST          = /usr/local/qt5pi/mkspecs/features/spec_pre.prf \
 		/usr/local/qt5pi/mkspecs/common/shell-unix.conf \
 		/usr/local/qt5pi/mkspecs/common/unix.conf \
@@ -135,7 +146,10 @@ DIST          = /usr/local/qt5pi/mkspecs/features/spec_pre.prf \
 		/usr/local/qt5pi/mkspecs/features/exceptions.prf \
 		/usr/local/qt5pi/mkspecs/features/yacc.prf \
 		/usr/local/qt5pi/mkspecs/features/lex.prf \
-		../I2C/I2C.pro ../I2C/main.cpp
+		../I2C/I2C.pro ../I2C/main.cpp \
+		../I2C/mpu6050.cpp \
+		../I2C/pca9685.cpp \
+		../I2C/esc.cpp
 QMAKE_TARGET  = I2C
 DESTDIR       = #avoid trailing-slash linebreak
 TARGET        = I2C
@@ -356,7 +370,7 @@ qmake_all: FORCE
 
 dist: 
 	@test -d .tmp/I2C1.0.0 || mkdir -p .tmp/I2C1.0.0
-	$(COPY_FILE) --parents $(DIST) .tmp/I2C1.0.0/ && $(COPY_FILE) --parents ../I2C/main.cpp .tmp/I2C1.0.0/ && (cd `dirname .tmp/I2C1.0.0` && $(TAR) I2C1.0.0.tar I2C1.0.0 && $(COMPRESS) I2C1.0.0.tar) && $(MOVE) `dirname .tmp/I2C1.0.0`/I2C1.0.0.tar.gz . && $(DEL_FILE) -r .tmp/I2C1.0.0
+	$(COPY_FILE) --parents $(DIST) .tmp/I2C1.0.0/ && $(COPY_FILE) --parents ../I2C/mpu6050.h ../I2C/pca9685.h ../I2C/esc.h .tmp/I2C1.0.0/ && $(COPY_FILE) --parents ../I2C/main.cpp ../I2C/mpu6050.cpp ../I2C/pca9685.cpp ../I2C/esc.cpp .tmp/I2C1.0.0/ && (cd `dirname .tmp/I2C1.0.0` && $(TAR) I2C1.0.0.tar I2C1.0.0 && $(COMPRESS) I2C1.0.0.tar) && $(MOVE) `dirname .tmp/I2C1.0.0`/I2C1.0.0.tar.gz . && $(DEL_FILE) -r .tmp/I2C1.0.0
 
 
 clean:compiler_clean 
@@ -379,8 +393,228 @@ check: first
 
 compiler_rcc_make_all:
 compiler_rcc_clean:
-compiler_moc_header_make_all:
+compiler_moc_header_make_all: moc_mpu6050.cpp moc_pca9685.cpp moc_esc.cpp
 compiler_moc_header_clean:
+	-$(DEL_FILE) moc_mpu6050.cpp moc_pca9685.cpp moc_esc.cpp
+moc_mpu6050.cpp: /media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QObject \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnamespace.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobal.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qconfig.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qfeatures.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsystemdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qprocessordetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcompilerdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypeinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypetraits.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsysinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlogging.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qflags.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbasicatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_bootstrap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qgenericatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_msvc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv7.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv6.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv5.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_ia64.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_mips.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_x86.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_cxx11.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_gcc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_unix.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobalstatic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmutex.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnumeric.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstring.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qchar.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbytearray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qrefcount.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qarraydata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringbuilder.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qalgorithms.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiterator.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcoreevent.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qscopedpointer.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmetatype.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvarlengtharray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontainerfwd.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qisenum.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QDebug \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdebug.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qhash.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpair.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtextstream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiodevice.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlocale.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvariant.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdatastream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qregexp.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringmatcher.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qshareddata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvector.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpoint.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qset.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontiguouscache.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/include/wiringPiI2C.h \
+		../I2C/mpu6050.h
+	/usr/local/qt5pi/bin/moc $(DEFINES) -I/usr/local/qt5pi/mkspecs/devices/linux-rasp-pi-g++ -I/media/psf/Home/Documents/Drone/Drone/Code/Testing/I2C -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/qt5pi/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore -I. -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include/c++/4.7.2 -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include/c++/4.7.2/arm-linux-gnueabihf -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include/c++/4.7.2/backward -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/lib/gcc/arm-linux-gnueabihf/4.7.2/include -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/lib/gcc/arm-linux-gnueabihf/4.7.2/include-fixed -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/include/arm-linux-gnueabihf ../I2C/mpu6050.h -o moc_mpu6050.cpp
+
+moc_pca9685.cpp: /media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QObject \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnamespace.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobal.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qconfig.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qfeatures.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsystemdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qprocessordetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcompilerdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypeinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypetraits.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsysinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlogging.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qflags.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbasicatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_bootstrap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qgenericatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_msvc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv7.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv6.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv5.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_ia64.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_mips.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_x86.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_cxx11.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_gcc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_unix.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobalstatic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmutex.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnumeric.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstring.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qchar.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbytearray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qrefcount.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qarraydata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringbuilder.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qalgorithms.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiterator.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcoreevent.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qscopedpointer.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmetatype.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvarlengtharray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontainerfwd.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qisenum.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QDebug \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdebug.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qhash.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpair.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtextstream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiodevice.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlocale.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvariant.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdatastream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qregexp.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringmatcher.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qshareddata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvector.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpoint.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qset.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontiguouscache.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/include/wiringPiI2C.h \
+		../I2C/pca9685.h
+	/usr/local/qt5pi/bin/moc $(DEFINES) -I/usr/local/qt5pi/mkspecs/devices/linux-rasp-pi-g++ -I/media/psf/Home/Documents/Drone/Drone/Code/Testing/I2C -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/qt5pi/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore -I. -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include/c++/4.7.2 -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include/c++/4.7.2/arm-linux-gnueabihf -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include/c++/4.7.2/backward -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/lib/gcc/arm-linux-gnueabihf/4.7.2/include -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/lib/gcc/arm-linux-gnueabihf/4.7.2/include-fixed -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/include/arm-linux-gnueabihf ../I2C/pca9685.h -o moc_pca9685.cpp
+
+moc_esc.cpp: /media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QObject \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnamespace.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobal.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qconfig.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qfeatures.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsystemdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qprocessordetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcompilerdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypeinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypetraits.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsysinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlogging.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qflags.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbasicatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_bootstrap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qgenericatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_msvc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv7.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv6.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv5.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_ia64.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_mips.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_x86.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_cxx11.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_gcc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_unix.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobalstatic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmutex.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnumeric.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstring.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qchar.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbytearray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qrefcount.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qarraydata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringbuilder.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qalgorithms.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiterator.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcoreevent.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qscopedpointer.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmetatype.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvarlengtharray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontainerfwd.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qisenum.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject_impl.h \
+		../I2C/pca9685.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QDebug \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdebug.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qhash.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpair.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtextstream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiodevice.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlocale.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvariant.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdatastream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qregexp.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringmatcher.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qshareddata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvector.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpoint.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qset.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontiguouscache.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/include/wiringPiI2C.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QThread \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qthread.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QTimer \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtimer.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbasictimer.h \
+		../I2C/esc.h
+	/usr/local/qt5pi/bin/moc $(DEFINES) -I/usr/local/qt5pi/mkspecs/devices/linux-rasp-pi-g++ -I/media/psf/Home/Documents/Drone/Drone/Code/Testing/I2C -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/qt5pi/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore -I. -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include/c++/4.7.2 -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include/c++/4.7.2/arm-linux-gnueabihf -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include/c++/4.7.2/backward -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/lib/gcc/arm-linux-gnueabihf/4.7.2/include -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/lib/gcc/arm-linux-gnueabihf/4.7.2/include-fixed -I/media/psf/DavidKopala/Drone/bakeqtpi_opt/gcc-4.7-linaro-rpi-gnueabihf/arm-linux-gnueabihf/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/include -I/home/davidkopala/bakeqtpi_opt_ln/rasp-pi-rootfs/usr/include/arm-linux-gnueabihf ../I2C/esc.h -o moc_esc.cpp
+
 compiler_moc_source_make_all:
 compiler_moc_source_clean:
 compiler_yacc_decl_make_all:
@@ -389,7 +623,7 @@ compiler_yacc_impl_make_all:
 compiler_yacc_impl_clean:
 compiler_lex_make_all:
 compiler_lex_clean:
-compiler_clean: 
+compiler_clean: compiler_moc_header_clean 
 
 ####### Compile
 
@@ -443,14 +677,282 @@ main.o: ../I2C/main.cpp /media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs
 		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontainerfwd.h \
 		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qisenum.h \
 		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject_impl.h \
-		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qeventloop.h
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qeventloop.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/include/wiringPiI2C.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QDebug \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdebug.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qhash.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpair.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtextstream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiodevice.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlocale.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvariant.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdatastream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qregexp.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringmatcher.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qshareddata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvector.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpoint.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qset.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontiguouscache.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QThread \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qthread.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QList \
+		../I2C/mpu6050.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QObject \
+		../I2C/pca9685.h \
+		../I2C/esc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QTimer \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtimer.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbasictimer.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../I2C/main.cpp
+
+mpu6050.o: ../I2C/mpu6050.cpp ../I2C/mpu6050.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QObject \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnamespace.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobal.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qconfig.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qfeatures.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsystemdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qprocessordetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcompilerdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypeinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypetraits.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsysinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlogging.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qflags.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbasicatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_bootstrap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qgenericatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_msvc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv7.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv6.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv5.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_ia64.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_mips.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_x86.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_cxx11.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_gcc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_unix.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobalstatic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmutex.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnumeric.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstring.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qchar.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbytearray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qrefcount.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qarraydata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringbuilder.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qalgorithms.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiterator.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcoreevent.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qscopedpointer.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmetatype.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvarlengtharray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontainerfwd.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qisenum.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QDebug \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdebug.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qhash.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpair.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtextstream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiodevice.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlocale.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvariant.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdatastream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qregexp.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringmatcher.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qshareddata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvector.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpoint.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qset.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontiguouscache.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/include/wiringPiI2C.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mpu6050.o ../I2C/mpu6050.cpp
+
+pca9685.o: ../I2C/pca9685.cpp ../I2C/pca9685.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QObject \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnamespace.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobal.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qconfig.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qfeatures.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsystemdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qprocessordetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcompilerdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypeinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypetraits.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsysinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlogging.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qflags.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbasicatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_bootstrap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qgenericatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_msvc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv7.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv6.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv5.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_ia64.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_mips.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_x86.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_cxx11.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_gcc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_unix.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobalstatic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmutex.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnumeric.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstring.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qchar.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbytearray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qrefcount.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qarraydata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringbuilder.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qalgorithms.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiterator.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcoreevent.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qscopedpointer.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmetatype.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvarlengtharray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontainerfwd.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qisenum.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QDebug \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdebug.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qhash.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpair.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtextstream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiodevice.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlocale.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvariant.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdatastream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qregexp.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringmatcher.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qshareddata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvector.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpoint.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qset.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontiguouscache.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/include/wiringPiI2C.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QThread \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qthread.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o pca9685.o ../I2C/pca9685.cpp
+
+esc.o: ../I2C/esc.cpp ../I2C/esc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QObject \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnamespace.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobal.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qconfig.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qfeatures.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsystemdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qprocessordetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcompilerdetection.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypeinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtypetraits.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qsysinfo.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlogging.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qflags.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbasicatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_bootstrap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qgenericatomic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_msvc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv7.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv6.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_armv5.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_ia64.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_mips.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_x86.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_cxx11.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_gcc.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qatomic_unix.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qglobalstatic.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmutex.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qnumeric.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobjectdefs_impl.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstring.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qchar.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbytearray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qrefcount.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qarraydata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringbuilder.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qalgorithms.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiterator.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcoreevent.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qscopedpointer.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmetatype.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvarlengtharray.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontainerfwd.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qisenum.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qobject_impl.h \
+		../I2C/pca9685.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QDebug \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdebug.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qhash.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpair.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qmap.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtextstream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qiodevice.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qlocale.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvariant.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringlist.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qdatastream.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qregexp.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qstringmatcher.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qshareddata.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qvector.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qpoint.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qset.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qcontiguouscache.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/include/wiringPiI2C.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QThread \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qthread.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/QTimer \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qtimer.h \
+		/media/psf/DavidKopala/Drone/bakeqtpi_opt/rasp-pi-rootfs/usr/local/qt5pi/include/QtCore/qbasictimer.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o esc.o ../I2C/esc.cpp
+
+moc_mpu6050.o: moc_mpu6050.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_mpu6050.o moc_mpu6050.cpp
+
+moc_pca9685.o: moc_pca9685.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_pca9685.o moc_pca9685.cpp
+
+moc_esc.o: moc_esc.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_esc.o moc_esc.cpp
 
 ####### Install
 
-install:   FORCE
+install_target: first FORCE
+	@test -d $(INSTALL_ROOT)/home/pi || mkdir -p $(INSTALL_ROOT)/home/pi
+	-$(INSTALL_PROGRAM) "$(QMAKE_TARGET)" "$(INSTALL_ROOT)/home/pi/$(QMAKE_TARGET)"
 
-uninstall:   FORCE
+uninstall_target: FORCE
+	-$(DEL_FILE) "$(INSTALL_ROOT)/home/pi/$(QMAKE_TARGET)"
+	-$(DEL_DIR) $(INSTALL_ROOT)/home/pi/ 
+
+
+install:  install_target  FORCE
+
+uninstall: uninstall_target   FORCE
 
 FORCE:
 
